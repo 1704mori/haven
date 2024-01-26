@@ -7,6 +7,8 @@ class Bot:
     def __init__(self):
         self._debug = False
 
+        self.cutable_trees_pos = []
+
         path = os.path.dirname(os.path.dirname(__file__))
         self.img_path = os.path.join(path, "bot/img")
 
@@ -30,7 +32,7 @@ class Bot:
         contours, _ = cv2.findContours(gray_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
         for contour in contours:
-            area = cv2.contourArea(contour)
+            # area = cv2.contourArea(contour)
 
             # if area < 499:
             #     continue
@@ -134,7 +136,11 @@ class Bot:
             top_left = loc
             bottom_right = (top_left[0] + self.templates["axe"].shape[1], top_left[1] + self.templates["axe"].shape[0])
 
-            cv2.rectangle(frame, top_left, bottom_right, (0, 255, 0), 2)
+            if self._debug:
+                cv2.rectangle(frame, top_left, bottom_right, (0, 255, 0), 2)
+
+            left, top, right, bottom = top_left[0], top_left[1], bottom_right[0], bottom_right[1]
+            self.cutable_trees_pos.append((left, top, right, bottom))
 
         cv2.namedWindow("frame", cv2.WINDOW_NORMAL)
         # cv2.resizeWindow("frame", 300, 300)
