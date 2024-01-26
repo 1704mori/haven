@@ -23,5 +23,6 @@ def capture_and_process(bot):
 
 if __name__ == "__main__":
     bot_instance = Bot()
+    bot_instance.debug(True)
     bot_thread = threading.Thread(target=capture_and_process, args=(bot_instance,))
     bot_thread.start()
