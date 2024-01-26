@@ -1,11 +1,20 @@
 import numpy as np
 import cv2
+from pynput import keyboard
+import os
 
 class Bot:
     def __init__(self):
-        self.template = cv2.imread("indicator.png", cv2.IMREAD_GRAYSCALE)
-        self.template = cv2.Canny(self.template, 50, 200)
+        path = os.path.dirname(os.path.dirname(__file__))
+        self.img_path = os.path.join(path, "bot/img")
+
+        self.templates = {
+            "indicator": cv2.Canny(cv2.imread(os.path.join(self.img_path, "indicator.png"), cv2.IMREAD_GRAYSCALE), 50, 200),
+            "axe": cv2.Canny(cv2.imread(os.path.join(self.img_path, "axe2.png"), cv2.IMREAD_GRAYSCALE), 50, 200),
+        }
         self.threshold = 0.8
+
+        self.keyboard = keyboard.Controller()
 
     def draw_contours(self, roi):
         hsv_roi = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
@@ -55,6 +64,7 @@ class Bot:
             abs_ratio = abs(indicator_aspect_ratio - contour_aspect_ratio)
             if abs_ratio >= .8 and abs_ratio <= 1.2:
                 print("overlap")
+                # self.keyboard.press("f")
                 
         else:
             print("No contours found.")
@@ -68,11 +78,31 @@ class Bot:
         frame_gray = cv2.Canny(frame_gray, 50, 200)
 
         h, w = frame_gray.shape
-        result = cv2.matchTemplate(frame_gray, self.template, cv2.TM_CCOEFF_NORMED)
+        result = cv2.matchTemplate(frame_gray, self.templates["indicator"], cv2.TM_CCOEFF_NORMED)
         _, _, _, max_loc = cv2.minMaxLoc(result)
 
         if result[max_loc[1], max_loc[0]] > self.threshold:
             top_left = max_loc
-            bottom_right = (top_left[0] + self.template.shape[1], top_left[1] + self.template.shape[0])
+            bottom_right = (top_left[0] + self.templates["indicator"].shape[1], top_left[1] + self.templates["indicator"].shape[0])
 
             self.draw_indicator(frame, top_left, bottom_right)
+
+        self.analyse_woodcutting(frame)
+
+    def analyse_woodcutting(self, frame):
+        frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        frame_gray = cv2.Canny(frame_gray, 50, 200)
+
+        result = cv2.matchTemplate(frame_gray, self.templates["axe"], cv2.TM_CCOEFF_NORMED)
+        locations = np.where(result >= self.threshold)
+        locations = list(zip(*locations[::-1]))
+
+        for loc in locations:
+            top_left = loc
+            bottom_right = (top_left[0] + self.templates["axe"].shape[1], top_left[1] + self.templates["axe"].shape[0])
+
+            cv2.rectangle(frame, top_left, bottom_right, (0, 255, 0), 2)
+
+        cv2.namedWindow("frame", cv2.WINDOW_NORMAL)
+        # cv2.resizeWindow("frame", 300, 300)
+        cv2.imshow("frame", frame)
